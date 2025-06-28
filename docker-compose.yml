@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  receipt-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: receipt-processor-app
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - receipt-network
+
+  receipt-processor-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: receipt-processor-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://kid-dev.australiaeast.cloudapp.azure.com
+    restart: unless-stopped
+    profiles:
+      - dev
+    networks:
+      - receipt-network
+
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: receipt-nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - receipt-processor
+    restart: unless-stopped
+    profiles:
+      - proxy
+    networks:
+      - receipt-network
+
+networks:
+  receipt-network:
+    driver: bridge
+    name: receipt-processor-network
+
+volumes:
+  node_modules:
+    name: receipt-processor-node-modules

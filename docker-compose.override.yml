@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  receipt-processor-dev:
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - .:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
