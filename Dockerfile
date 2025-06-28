@@ -8,7 +8,10 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install Vite secara terpisah
+RUN npm install vite && \
+    npm ci --only=production && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
