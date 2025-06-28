@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -23,16 +23,20 @@ jobs:
         with:
           node-version: '20.x'
 
-      - name: npm install and build
+      - name: npm install, build, and test
         run: |
           npm install
           npm run build --if-present
+          npm run test --if-present
+
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: ./dist 
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -40,22 +44,22 @@ jobs:
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: node-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
       
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5903C8834DAB4F4BA3B86081D2ABFD59 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_B4909741139E4B88A1C9777BFFBFF2B0 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_50D3C9AFE9EE499EA14A5F6434A3195E }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_87BEA4F4FA8C4B4B81696D420350BF38 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_21BD9F7D485A43C3B84959CEFE703C8F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5F05D23B0A5143BFA3E5470A76E76A50 }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -63,4 +67,5 @@ jobs:
         with:
           app-name: 'kid-web'
           slot-name: 'Production'
-          package: . 
+          package: .
+          
